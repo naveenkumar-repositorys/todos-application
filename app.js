@@ -8,6 +8,7 @@ const app = express();
 const dbPath = path.join(__dirname, "todoApplication.db");
 
 let db = null;
+app.use(express.json());
 
 //FUNCTIONS:
 
@@ -41,6 +42,8 @@ const initializeDBAndServer = async () => {
 
 initializeDBAndServer();
 
+//API-1
+
 app.get("/todos/", async (request, response) => {
   let { status, priority, search_q = "" } = request.query;
   //console.log(status);
@@ -66,5 +69,82 @@ app.get("/todos/", async (request, response) => {
   }
 
   let dbResponse = await db.all(selectInQuery);
-  console.log(dbResponse);
+  //console.log(dbResponse);
+  response.send(dbResponse);
 });
+
+//API-2
+
+app.get("/todos/:todoId/", async (request, response) => {
+  let { todoId } = request.params;
+  let specificTodo = `SELECT * FROM todo 
+        WHERE id = ${todoId};`;
+  let dbResponse = await db.get(specificTodo);
+  //console.log(dbResponse);
+  response.send(dbResponse);
+});
+
+//API-3
+
+app.post("/todos/", async (request, response) => {
+  const requestDetails = request.body;
+  const { id, todo, priority, status } = requestDetails;
+  const addTodoQuery = `INSERT INTO 
+        todo(id,todo,priority,status)
+        VALUES(
+            ${id},
+            "${todo}",
+            "${priority}",
+            "${status}"
+        );`;
+  let dbResponse = await db.run(addTodoQuery);
+  console.log(dbResponse);
+  response.send("Todo Successfully Added");
+});
+
+//API-4
+
+app.put("/todos/:todoId/", async (request, response) => {
+  let { todoId } = request.params;
+  let { status, priority, todo } = request.body;
+  //console.log(status);
+  let selectInQuery = "";
+  let updatedStatus = "";
+  switch (true) {
+    case status !== undefined:
+      selectInQuery = `UPDATE todo 
+        SET status = "${status}"
+        WHERE id = ${todoId};`;
+      updatedStatus = "Status Updated";
+      break;
+    case priority !== undefined:
+      selectInQuery = `UPDATE todo 
+        SET priority = "${priority}"
+        WHERE id = ${todoId};`;
+      updatedStatus = "Priority Updated";
+      break;
+    case todo !== undefined:
+      selectInQuery = `UPDATE todo 
+        SET todo = "${todo}"
+        WHERE id = ${todoId};`;
+      updatedStatus = "Todo Updated";
+      break;
+  }
+
+  let dbResponse = await db.run(selectInQuery);
+  console.log(dbResponse);
+  response.send(updatedStatus);
+});
+
+//API-5
+
+app.delete("/todos/:todoId/", async (request, response) => {
+  let { todoId } = request.params;
+  let deleteTodoQuery = `DELETE FROM todo
+    WHERE id = ${todoId};`;
+  let dbResponse = await db.run(deleteTodoQuery);
+  console.log(dbResponse);
+  response.send("Todo Deleted");
+});
+
+module.exports = app;
